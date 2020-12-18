@@ -60,7 +60,7 @@ export default class TransactionScreen extends React.Component {
 
     initiateBookIssue = async()=>{
       //add a transaction
-      db.collection("transactions").add({
+      db.collection("transaction").add({
         'studentId': this.state.scannedStudentId,
         'bookId' : this.state.scannedBookId,
         'date' : firebase.firestore.Timestamp.now().toDate(),
@@ -68,56 +68,154 @@ export default class TransactionScreen extends React.Component {
       })
       //change book status
       db.collection("books").doc(this.state.scannedBookId).update({
-        'bookAvailability': false
+        'Availability': false
       })
       //change number  of issued books for student
-      db.collection("students").doc(this.state.scannedStudentId).update({
-        'numberOfBooksIssued': firebase.firestore.FieldValue.increment(1)
+      db.collection("student").doc(this.state.scannedStudentId).update({
+        'NoOfBooksIssued': firebase.firestore.FieldValue.increment(1)
       })
     }
 
     initiateBookReturn = async()=>{
       //add a transaction
-      db.collection("transactions").add({
-        'studentId': this.state.scannedStudentId,
+      db.collection("transaction").add({
+        'StudentId': this.state.scannedStudentId,
         'bookId' : this.state.scannedBookId,
         'date' : firebase.firestore.Timestamp.now().toDate(),
         'transactionType': "Return"
       })
       //change book status
       db.collection("books").doc(this.state.scannedBookId).update({
-        'bookAvailability': true
+        'Availability': true
       })
       //change number  of issued books for student
-      db.collection("students").doc(this.state.scannedStudentId).update({
-        'numberOfBooksIssued': firebase.firestore.FieldValue.increment(-1)
+      db.collection("student").doc(this.state.scannedStudentId).update({
+        'NoOfBooksIssued': firebase.firestore.FieldValue.increment(-1)
       })
     }
 
+    checkBookEligibility=async()=>{
+      var transactionType=null
+      var bookRef = await db.collection("books").where("BookId","==",this.state.scannedBookId)
+      .get()
+
+      if(bookRef.docs.length==0){
+       transactionType=false
+      }
+      else{
+       bookRef.docs.map((doc)=>{
+        var book = doc.data()
+
+        if(book.Availability){
+          transactionType="Issue"
+        }
+        else{
+          transactionType="Return"
+        }
+
+       })
+      }
+      return transactionType
+    }
+     
+    checkStudentEligibilityIssue=async ()=>{
+      var studentEligible=null
+    var studentRef= await db.collection("student").where("StudentId","==",this.state.scannedStudentId).get()
+     console.log(studentRef.docs.length)
+    if(studentRef.docs.length==0){
+      studentEligible=false
+      Alert.alert("This student doesn't exist")
+      this.setState({
+        scannedStudentId:"",
+        scannedBookId:""
+      })
+     }
+     else{
+      studentRef.docs.map((doc)=>{
+       var student = doc.data()
+
+       if(student.NoOfBooksIssued<2){
+        studentEligible=true
+       }
+       else{
+        studentEligible=false
+        Alert.alert("Student has already issued 2 books")
+        this.setState({
+          scannedStudentId:"",
+          scannedBookId:""
+        }) 
+       }
+
+      })
+     }
+     return studentEligible
+    }
+    
+
+  
+    checkStudentEligibilityReturn=async()=>{
+      var studentEligible=null
+      var transactionRef= await db.collection("transaction").where("bookId","==",this.state.scannedBookId).limit(1).get()
+  
+       
+        transactionRef.docs.map((doc)=>{
+         var lastBook = doc.data()
+  
+         if(lastBook.StudentId==this.state.scannedStudentId){
+          studentEligible=true
+         }
+         else{
+          studentEligible=false
+          Alert.alert("Book wasn't issued by this student")
+          this.setState({
+            scannedStudentId:"",
+            scannedBookId:""
+          }) 
+         }
+  
+        })
+       
+       return studentEligible
+    }
+
+
+
+
+
+
 
     handleTransaction = async()=>{
-      var transactionMessage
-      db.collection("books").doc(this.state.scannedBookId).get()
-      .then((doc)=>{
-          //snapshot.forEach((doc)=>{
-            var book = doc.data()
-            if(book.bookAvailability){
-                this.initiateBookIssue();       
-                transactionMessage = "Book Issued"
-                ToastAndroid.show(transactionMessage, ToastAndroid.SHORT);
-                // Alert.alert(transactionMessage)
-            }
-            else{
-                this.initiateBookReturn();
-                transactionMessage = "Book Returned"
-                ToastAndroid.show(transactionMessage, ToastAndroid.SHORT);
-                // Alert.alert(transactionMessage)
-            }
-      })
+      
+      var transactionType=await this.checkBookEligibility()
 
-      this.setState({
-        transactionMessage: transactionMessage
-      })
+      if(!transactionType){
+        Alert.alert("Book doesn't exist in this database")
+        this.setState(
+         {
+           scannedBookId:"",
+           scannedStudentId:""
+         } 
+         
+        )
+      }
+      else if(transactionType==="Issue"){
+        var studentEligible = await this.checkStudentEligibilityIssue()
+
+        if(studentEligible){
+          this.initiateBookIssue()
+          Alert.alert("Book issued to this student")
+        }
+      }
+      else if(transactionType==="Return"){
+        var studentEligible = await this.checkStudentEligibilityReturn()
+
+        if(studentEligible){
+          this.initiateBookReturn()
+          Alert.alert("Book returned by this student")
+        }
+      }
+
+
     }
 
     render() {
