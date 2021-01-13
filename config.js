@@ -2,12 +2,13 @@ import * as firebase from 'firebase'
 require('@firebase/firestore')
 
 var firebaseConfig = {
-  apiKey: "AIzaSyAtKFkaDSszxKmT5Ge0QNB2z7uo-vQ7lzw",
-  authDomain: "willy-app-b5e56.firebaseapp.com",
-  projectId: "willy-app-b5e56",
-  storageBucket: "willy-app-b5e56.appspot.com",
-  messagingSenderId: "1002473353221",
-  appId: "1:1002473353221:web:377382e31fa435f1596c6c"
+  apiKey: "AIzaSyDyQNi2nT286Hp6fMX588FVH1SYpY32VoM",
+  authDomain: "wily-app-de26e.firebaseapp.com",
+  databaseURL: "https://wily-app-de26e.firebaseio.com",
+  projectId: "wily-app-de26e",
+  storageBucket: "wily-app-de26e.appspot.com",
+  messagingSenderId: "407705909852",
+  appId: "1:407705909852:web:5d053c3d9ef4c539004499"
 };
   // Initialize Firebase
   firebase.initializeApp(firebaseConfig);

@@ -60,7 +60,7 @@ export default class TransactionScreen extends React.Component {
 
     initiateBookIssue = async()=>{
       //add a transaction
-      db.collection("transaction").add({
+      db.collection("transactions").add({
         'studentId': this.state.scannedStudentId,
         'bookId' : this.state.scannedBookId,
         'date' : firebase.firestore.Timestamp.now().toDate(),
@@ -68,17 +68,17 @@ export default class TransactionScreen extends React.Component {
       })
       //change book status
       db.collection("books").doc(this.state.scannedBookId).update({
-        'Availability': false
+        'bookAvailability': false
       })
       //change number  of issued books for student
       db.collection("student").doc(this.state.scannedStudentId).update({
-        'NoOfBooksIssued': firebase.firestore.FieldValue.increment(1)
+        'numberOfBooksIssued': firebase.firestore.FieldValue.increment(1)
       })
     }
 
     initiateBookReturn = async()=>{
       //add a transaction
-      db.collection("transaction").add({
+      db.collection("transactions").add({
         'StudentId': this.state.scannedStudentId,
         'bookId' : this.state.scannedBookId,
         'date' : firebase.firestore.Timestamp.now().toDate(),
@@ -86,17 +86,17 @@ export default class TransactionScreen extends React.Component {
       })
       //change book status
       db.collection("books").doc(this.state.scannedBookId).update({
-        'Availability': true
+        'bookAvailability': true
       })
       //change number  of issued books for student
       db.collection("student").doc(this.state.scannedStudentId).update({
-        'NoOfBooksIssued': firebase.firestore.FieldValue.increment(-1)
+        'numberOfBooksIssued': firebase.firestore.FieldValue.increment(-1)
       })
     }
 
     checkBookEligibility=async()=>{
       var transactionType=null
-      var bookRef = await db.collection("books").where("BookId","==",this.state.scannedBookId)
+      var bookRef = await db.collection("books").where("bookId","==",this.state.scannedBookId)
       .get()
 
       if(bookRef.docs.length==0){
@@ -106,7 +106,7 @@ export default class TransactionScreen extends React.Component {
        bookRef.docs.map((doc)=>{
         var book = doc.data()
 
-        if(book.Availability){
+        if(book.bookAvailability){
           transactionType="Issue"
         }
         else{
@@ -120,11 +120,12 @@ export default class TransactionScreen extends React.Component {
      
     checkStudentEligibilityIssue=async ()=>{
       var studentEligible=null
-    var studentRef= await db.collection("student").where("StudentId","==",this.state.scannedStudentId).get()
-     console.log(studentRef.docs.length)
+      alert(this.state.scannedStudentId)
+    var studentRef= await db.collection("students").where("studentId","==",this.state.scannedStudentId).get()
+    alert(studentRef.docs.length)
     if(studentRef.docs.length==0){
       studentEligible=false
-      Alert.alert("This student doesn't exist")
+      alert("This student doesn't exist")
       this.setState({
         scannedStudentId:"",
         scannedBookId:""
@@ -134,12 +135,12 @@ export default class TransactionScreen extends React.Component {
       studentRef.docs.map((doc)=>{
        var student = doc.data()
 
-       if(student.NoOfBooksIssued<2){
+       if(student.numberOfBooksIssued<2){
         studentEligible=true
        }
        else{
         studentEligible=false
-        Alert.alert("Student has already issued 2 books")
+        alert("Student has already issued 2 books")
         this.setState({
           scannedStudentId:"",
           scannedBookId:""
@@ -155,7 +156,7 @@ export default class TransactionScreen extends React.Component {
   
     checkStudentEligibilityReturn=async()=>{
       var studentEligible=null
-      var transactionRef= await db.collection("transaction").where("bookId","==",this.state.scannedBookId).limit(1).get()
+      var transactionRef= await db.collection("transactions").where("bookId","==",this.state.scannedBookId).limit(1).get()
   
        
         transactionRef.docs.map((doc)=>{
@@ -166,7 +167,7 @@ export default class TransactionScreen extends React.Component {
          }
          else{
           studentEligible=false
-          Alert.alert("Book wasn't issued by this student")
+          alert("Book wasn't issued by this student")
           this.setState({
             scannedStudentId:"",
             scannedBookId:""
@@ -189,7 +190,7 @@ export default class TransactionScreen extends React.Component {
       var transactionType=await this.checkBookEligibility()
 
       if(!transactionType){
-        Alert.alert("Book doesn't exist in this database")
+      alert("Book doesn't exist in this database")
         this.setState(
          {
            scannedBookId:"",
@@ -203,7 +204,7 @@ export default class TransactionScreen extends React.Component {
 
         if(studentEligible){
           this.initiateBookIssue()
-          Alert.alert("Book issued to this student")
+          alert("Book issued to this student")
         }
       }
       else if(transactionType==="Return"){
@@ -211,7 +212,7 @@ export default class TransactionScreen extends React.Component {
 
         if(studentEligible){
           this.initiateBookReturn()
-          Alert.alert("Book returned by this student")
+         alert("Book returned by this student")
         }
       }
 
@@ -274,9 +275,6 @@ export default class TransactionScreen extends React.Component {
               style={styles.submitButton}
               onPress={async()=>{
                 var transactionMessage = this.handleTransaction();
-                this.setState(
-                  {scannedBookId:'',
-                   scannedStudentId:''})
               }}>
           <Text style={styles.submitButtonText}>Submit</Text>
             </TouchableOpacity>
